@@ -1,0 +1,521 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import com.qualcomm.robotcore.hardware.Servo;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import java.util.Locale;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.Func;
+import java.util.List;
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+import java.lang.Math;
+import java.util.Locale;
+import java.lang.*;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+/**
+ * {@link SensorBNO055IMU} gives a short demo on how to use the BNO055 Inertial Motion Unit (IMU) from AdaFruit.
+ *
+ * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
+ * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
+ *
+ * @see <a href="http://www.adafruit.com/products/2472">Adafruit IMU</a>
+ */
+@Autonomous(name = "AutoFarSampling", group = "Sensor")
+
+public class AutoFarSampling extends LinearOpMode {
+    
+    private DcMotor motor0;
+    private DcMotor motor1;
+    private DcMotor motor2;
+    private DcMotor motor3;
+    private DcMotor liftMotor;
+    private Servo teamMarker;
+    private Servo frontLatch;
+    private Servo backLatch;
+    private double motorTurnPower;
+    private double angleDiff;
+    double isAngle = 0; //value for gyro turn
+    BNO055IMU imu;
+    double targetAngle;
+    private ElapsedTime     runtime = new ElapsedTime();
+    private double time;
+    Orientation angles;
+    private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
+    private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
+    private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
+    private static final String VUFORIA_KEY = "AbCv3/v/////AAABmbnlpgI/90uGhVQj2gbBA8AZlaeT+ecbq4YM/R/FfD24b5PLNQYcWqAFmnVBM2T0N4Hp6ukCI7o5ywsJJ6bK80Ng9NmJQaIET76mLiyra1c6HqsICGrNjwbQzze+BB3rfYZFxwEAd6J56MMEu3bPfs2+k1UTweTWYwDrorqjecr8ygt6nvnm7JBPr4q5zMI/lC+3JtU9unIHTxQWBOYWKDcY7xq/RmPYJqbLKToBlh9BGnmAJH/kP1Q6+vGZiBTk9z3LX5/UGY/MLsJh+9Bd7ycQEsD4frwosvsmFEdP9QqnChMXfMNK7cci0inM933/Uwac0grmwJCScZDVdAnXr1jQdaQQX4GBR+CXiuQJ68Ej";
+    private VuforiaLocalizer vuforia;
+    private TFObjectDetector tfod;
+    int goldMineralX = -1;
+    int silverMineral1X = -1;
+    int silverMineral2X = -1;
+    
+    @Override public void runOpMode() {
+        motor0 = hardwareMap.get(DcMotor.class, "motor0");
+        motor1 = hardwareMap.get(DcMotor.class, "motor1");
+        motor2 = hardwareMap.get(DcMotor.class, "motor2");
+        motor3 = hardwareMap.get(DcMotor.class, "motor3");
+        liftMotor = hardwareMap.get(DcMotor.class, "liftMotor");
+        teamMarker = hardwareMap.get(Servo.class, "teamMarker");
+        backLatch = hardwareMap.get(Servo.class, "backLatch");
+        frontLatch = hardwareMap.get(Servo.class, "frontLatch");
+       
+        
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+        teamMarker.setPosition(0.35);
+        frontLatch.setPosition(.4);
+        backLatch.setPosition(.8);
+        
+        composeTelemetry();
+        resetEncoders();
+        initVuforia();
+
+        if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
+            initTfod();
+        } else {
+            telemetry.addData("Sorry!", "This device is not compatible with TFOD");
+        }
+        if (tfod != null) {
+                tfod.activate();
+        }
+        waitForStart();
+        imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+
+// CODE HERE
+            lift(.2, .5);
+            delatch();
+            delatch();
+            sleep(1000);
+            lift(-.25, 2.2);
+            checkCenter();
+            move(-100, -.6);
+            lift(.3, 2.4);
+            sleep(500);
+            gyroPivotLeft(-15, 4); 
+            checkRight();
+            move(100,.6);
+            switch (goldMineralX) {
+                case 1:  telemetry.addData("Gold is Left", goldMineralX);
+                     break;
+                case 2:  telemetry.addData("Gold is Center", goldMineralX);
+                    runCenter();
+                    break;
+                case 3:  telemetry.addData("Gold is Right", goldMineralX);
+                     break;
+            }
+            
+            if (tfod != null) {
+                tfod.shutdown();
+            }
+        
+    }
+    void runCenter(){
+        gyroPivotLeft(90, 6);
+        move(1250, .9);
+        sleep(100);
+        marker(.7);
+        sleep(500);
+        marker(.25);
+        sleep(500);
+        gyroTurn(-135, 4);
+        move(-2000, .9);
+    }
+    
+    void delatch() {
+        frontLatch.setPosition(1);
+        backLatch.setPosition(0);
+    }
+    
+    void marker(double teamMarkerPosition) {
+        teamMarker.setPosition(teamMarkerPosition);
+        
+    }
+    void lift(double liftPower, double liftTime) {
+        liftMotor.setPower(liftPower);
+        runtime.reset();
+        while (opModeIsActive() && (runtime.seconds() < liftTime)) {
+            telemetry.addData("Path", "Leg 1: %2.5f S Elapsed", runtime.seconds());
+            telemetry.update();
+        }
+        liftMotor.setPower(0);
+    }
+    void gyroTurn(double turnAngle, double expectedTurnTime) {
+        motor0.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        runtime.reset();
+        boolean readyToGo = false;
+            while(isAngle == 0){
+                telemetry.update();
+                telemetry.addData("runtime", runtime.seconds());
+                telemetry.addData("expected time", expectedTurnTime);
+
+                if (runtime.seconds() < expectedTurnTime && readyToGo == false){
+                    if ((Math.abs((turnAngle)-2)) < Math.abs(-angles.firstAngle)) {
+                        motor0.setPower(-motorTurnPower);
+                        motor1.setPower(-motorTurnPower);
+                        motor2.setPower(-motorTurnPower);
+                        motor3.setPower(-motorTurnPower);
+                    } else if ((Math.abs((turnAngle)+2)) > Math.abs(-angles.firstAngle)) {
+                        motor0.setPower(motorTurnPower);
+                        motor1.setPower(motorTurnPower);
+                        motor2.setPower(motorTurnPower);
+                        motor3.setPower(motorTurnPower);
+                    } else {
+                        
+                        readyToGo=true;
+                        
+                    }
+                    
+                } else {
+                    motor0.setPower(0);
+                    motor1.setPower(0);
+                    motor2.setPower(0);
+                    motor3.setPower(0);
+                    isAngle = 1;
+                }
+            
+                angleDiff = Math.abs(turnAngle+angles.firstAngle);
+                if(angleDiff < 60) {
+                    motorTurnPower = ((angleDiff)*(.0022222)+.13000);
+                    
+                } else {
+                    motorTurnPower = .3;
+                }
+            
+            } 
+        
+        resetGyro();
+        
+        
+    }
+    void gyroPivotRight(double pivotAngleRight) { // DON'T USE THIS FUNCTION IT IS BROKEN
+        motor0.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        
+        while(isAngle == 0){
+            telemetry.update();
+            if (((pivotAngleRight)+2) > -angles.firstAngle) {
+                motor0.setPower(-motorTurnPower);
+                motor1.setPower(-motorTurnPower);
+                
+            } else if (((pivotAngleRight)-2) < -angles.firstAngle){
+                motor0.setPower(motorTurnPower);
+                motor1.setPower(motorTurnPower);
+                
+            } else {
+                motor0.setPower(0);
+                motor1.setPower(0);
+                motor2.setPower(0);
+                motor3.setPower(0);
+                isAngle = 1;
+                
+            }
+        
+            angleDiff = Math.abs(pivotAngleRight+angles.firstAngle);
+            if(angleDiff < 60) {
+                motorTurnPower = ((angleDiff)*(.0022222)+.10000);
+                
+            } else {
+                motorTurnPower = .3;
+            }
+        
+        } 
+        resetGyro();
+        
+    }
+    void gyroPivotLeft(double pivotAngleLeft, double expectedPivotTime) {
+        motor0.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        boolean readyToGo = false;
+
+        while(isAngle == 0){
+            telemetry.update();
+            if (runtime.seconds() < expectedPivotTime && readyToGo == false){
+
+                if ((Math.abs((pivotAngleLeft)-2)) > Math.abs(-angles.firstAngle)) {
+                    motor0.setPower(motorTurnPower*1.3);
+                    motor1.setPower(motorTurnPower*1.3);
+                    motor2.setPower(motorTurnPower*.5);
+                    motor3.setPower(motorTurnPower*.5);
+                    
+                    
+                } else if ((Math.abs((pivotAngleLeft)+2)) < Math.abs(-angles.firstAngle)){
+                    motor0.setPower(-motorTurnPower*1.3);
+                    motor1.setPower(-motorTurnPower*1.3);
+                    motor2.setPower(-motorTurnPower*.5);
+                    motor3.setPower(-motorTurnPower*.5);
+                } else {
+                    readyToGo=true;
+
+                }
+                
+            } else {
+                motor0.setPower(0);
+                motor1.setPower(0);
+                motor2.setPower(0);
+                motor3.setPower(0);
+                isAngle = 1;
+                
+            }
+        
+            angleDiff = Math.abs(pivotAngleLeft+angles.firstAngle);
+            if(angleDiff < 60) {
+                motorTurnPower = ((angleDiff)*(.0022222)+.1600);
+                
+            } else {
+                motorTurnPower = .7;
+            }
+        
+        } 
+        resetGyro();
+        
+    }
+
+    void resetGyro(){
+        isAngle = 0;
+        angles.firstAngle = 0;
+        sleep(100);
+        
+        
+    }
+    void composeTelemetry() {
+
+        // At the beginning of each telemetry update, grab a bunch of data
+        // from the IMU that we will then display in separate lines.
+        telemetry.addAction(new Runnable() { @Override public void run()
+                {
+                // Acquiring the angles is relatively expensive; we don't want
+                // to do that in each of the three items that need that info, as that's
+                // three times the necessary expense.
+                angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+                }
+            });
+
+        telemetry.addLine()
+            .addData("status", new Func<String>() {
+                @Override public String value() {
+                    return imu.getSystemStatus().toShortString();
+                    }
+                })
+            .addData("calib", new Func<String>() {
+                @Override public String value() {
+                    return imu.getCalibrationStatus().toString();
+                    }
+                });
+
+        telemetry.addLine()
+            .addData("heading", new Func<String>() {
+                @Override public String value() {
+                    return formatAngle(angles.angleUnit, angles.firstAngle);
+                    }
+                });
+    }
+
+   
+
+    String formatAngle(AngleUnit angleUnit, double angle) {
+        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
+    }
+
+    String formatDegrees(double degrees) {
+        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
+    }
+    private int getTicks(double theDistance){
+        double newTicks = ((1720)/(10.16*3.14)/(10)*(theDistance));
+        int intTicks = (int)newTicks;
+        return intTicks;
+    }
+    
+    private void move(double howFar, double power){
+        
+        
+            motor0.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            motor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            motor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            motor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            sleep(100);
+            motor0.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            motor1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            motor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            motor3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            motor0.setPower(0);
+            motor1.setPower(0);
+            motor2.setPower(0);
+            motor3.setPower(0);
+            motor0.setTargetPosition(getTicks(howFar));
+            motor1.setTargetPosition(getTicks(howFar));
+            motor2.setTargetPosition(-getTicks(howFar));
+            motor3.setTargetPosition(-getTicks(howFar));
+            runtime.reset();
+            
+            motor0.setPower(power);
+            //motor1.setPower(power);
+            motor2.setPower(-power);
+            //motor3.setPower(-power);
+            
+            while(Math.abs(motor0.getCurrentPosition()) < Math.abs(motor0.getTargetPosition()) || Math.abs(motor2.getCurrentPosition()) < Math.abs(motor2.getTargetPosition()) )  { 
+                
+                int position0 = motor0.getCurrentPosition();
+                int position1 = motor1.getCurrentPosition();
+ 
+                telemetry.addData("motor ticks1: ", position0);
+                telemetry.addData("motor ticks2: ", position1);
+                telemetry.addData("power:  ", runtime);
+    
+                
+                telemetry.update();
+            }
+        
+        motor0.setPower(0);
+        motor2.setPower(0);
+        telemetry.addData("i'm done", power);
+        resetEncoders();
+    }
+    
+    private void resetEncoders(){
+        motor0.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        sleep(100);
+        motor0.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        motor1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        motor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        motor3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+    private void checkCenter() {
+        
+                    // getUpdatedRecognitions() will return null if no new information is available since
+                    // the last time that call was made.
+                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                    if (updatedRecognitions != null) {
+                      telemetry.addData("# Object Detected", updatedRecognitions.size());
+                      if (updatedRecognitions.size() > 0) {
+                        
+                        for (Recognition recognition : updatedRecognitions) {
+                          if (goldMineralX != -1 || silverMineral1X != -1){
+                            break;
+                          }
+                          
+                          if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
+                            goldMineralX = 2;
+                          } else {
+                            silverMineral1X = 1;
+                          }
+                        
+                        }
+                        
+                      telemetry.addData("oldMin", goldMineralX);
+                      telemetry.addData("SilvMin1", silverMineral1X);
+                      telemetry.addData("SilvMin2", silverMineral2X);
+                      telemetry.update();
+                    }
+                    }
+      }
+    
+    private void checkRight() {
+        
+                    // getUpdatedRecognitions() will return null if no new information is available since
+                    // the last time that call was made.
+                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                    if (updatedRecognitions != null) {
+                      telemetry.addData("# Object Detected", updatedRecognitions.size());
+                      if (updatedRecognitions.size() > 0) {
+                        
+                        for (Recognition recognition : updatedRecognitions) {
+                          if (goldMineralX == 6 || goldMineralX == 5 || silverMineral1X ==2){
+                            break;
+                          }
+                          
+                          if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
+                            goldMineralX = 3;
+                          } else {
+                            silverMineral1X = silverMineral1X+1;
+                          }
+                        
+                        }
+                        
+                      telemetry.addData("oldMin", goldMineralX);
+                      telemetry.addData("SilvMin1", silverMineral1X);
+                      telemetry.addData("SilvMin2", silverMineral2X);
+                      telemetry.update();
+                    }
+                    }
+      }
+    
+    private void checkTelemetry() {
+        telemetry.addData("oldMin", goldMineralX);
+        telemetry.addData("SilvMin1", silverMineral1X);
+        telemetry.addData("SilvMin2", silverMineral2X);
+        telemetry.update();
+        if (silverMineral1X == 2) {
+          goldMineralX = 1;
+        }
+    }
+    
+    private void initVuforia() {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraDirection = CameraDirection.BACK;
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        // Loading trackables is not necessary for the Tensor Flow Object Detection engine.
+    }
+
+    /**
+     * Initialize the Tensor Flow Object Detection engine.
+     */
+    private void initTfod() {
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+            "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_GOLD_MINERAL, LABEL_SILVER_MINERAL);
+    }
+}
+
+
