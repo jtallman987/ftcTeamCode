@@ -1,0 +1,225 @@
+
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import java.util.List;
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+
+/**
+ * This 2018-2019 OpMode illustrates the basics of using the TensorFlow Object Detection API to
+ * determine the position of the gold and silver minerals.
+ *
+ * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
+ * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list.
+ *
+ * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
+ * is explained below.
+ */
+@Autonomous(name = "TensorFlow", group = "Concept")
+
+public class TensorFlow extends LinearOpMode {
+    private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
+    private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
+    private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
+    private static final String VUFORIA_KEY = "AbCv3/v/////AAABmbnlpgI/90uGhVQj2gbBA8AZlaeT+ecbq4YM/R/FfD24b5PLNQYcWqAFmnVBM2T0N4Hp6ukCI7o5ywsJJ6bK80Ng9NmJQaIET76mLiyra1c6HqsICGrNjwbQzze+BB3rfYZFxwEAd6J56MMEu3bPfs2+k1UTweTWYwDrorqjecr8ygt6nvnm7JBPr4q5zMI/lC+3JtU9unIHTxQWBOYWKDcY7xq/RmPYJqbLKToBlh9BGnmAJH/kP1Q6+vGZiBTk9z3LX5/UGY/MLsJh+9Bd7ycQEsD4frwosvsmFEdP9QqnChMXfMNK7cci0inM933/Uwac0grmwJCScZDVdAnXr1jQdaQQX4GBR+CXiuQJ68Ej";
+    private VuforiaLocalizer vuforia;
+    private TFObjectDetector tfod;
+        int goldMineralX = -1;
+        int silverMineral1X = -1;
+        int silverMineral2X = -1;
+    @Override
+    public void runOpMode() {
+        // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
+        // first.
+        initVuforia();
+
+        if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
+            initTfod();
+        } else {
+            telemetry.addData("Sorry!", "This device is not compatible with TFOD");
+        }
+
+        /** Wait for the game to begin */
+        telemetry.addData(">", "Press Play to start tracking");
+        telemetry.update();
+        if (tfod != null) {
+                tfod.activate();
+            }
+        waitForStart();
+        
+
+        
+            
+        checkCenter();
+        checkTelemetry();
+        
+        sleep(5000);
+        checkRight();
+        checkTelemetry();
+        sleep(5000);
+        switch (goldMineralX) {
+            case 1:  telemetry.addData("Gold is Left", goldMineralX);
+                     break;
+            case 2:  telemetry.addData("Gold is Center", goldMineralX);
+                     break;
+            case 3:  telemetry.addData("Gold is Right", goldMineralX);
+                     break;
+        }
+        telemetry.update();
+        sleep(5000);
+            
+        
+        
+        if (tfod != null) {
+            tfod.shutdown();
+        }
+    }
+
+    /**
+     * Initialize the Vuforia localization engine.
+     */
+    private void checkCenter() {
+        
+                    // getUpdatedRecognitions() will return null if no new information is available since
+                    // the last time that call was made.
+                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                    if (updatedRecognitions != null) {
+                      telemetry.addData("# Object Detected", updatedRecognitions.size());
+                      if (updatedRecognitions.size() > 0) {
+                        
+                        for (Recognition recognition : updatedRecognitions) {
+                          if (goldMineralX != -1 || silverMineral1X != -1){
+                            break;
+                          }
+                          
+                          if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
+                            goldMineralX = 2;
+                          } else {
+                            silverMineral1X = 1;
+                          }
+                        
+                        }
+                        
+                      telemetry.addData("oldMin", goldMineralX);
+                      telemetry.addData("SilvMin1", silverMineral1X);
+                      telemetry.addData("SilvMin2", silverMineral2X);
+                      telemetry.update();
+                    }
+                    }
+      }
+    
+    private void checkRight() {
+        
+                    // getUpdatedRecognitions() will return null if no new information is available since
+                    // the last time that call was made.
+                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                    if (updatedRecognitions != null) {
+                      telemetry.addData("# Object Detected", updatedRecognitions.size());
+                      if (updatedRecognitions.size() > 0) {
+                        
+                        for (Recognition recognition : updatedRecognitions) {
+                          if (goldMineralX == 6 || goldMineralX == 5 || silverMineral1X ==2){
+                            break;
+                          }
+                          
+                          if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
+                            goldMineralX = 3;
+                          } else {
+                            silverMineral1X = silverMineral1X+1;
+                          }
+                        
+                        }
+                        
+                      telemetry.addData("oldMin", goldMineralX);
+                      telemetry.addData("SilvMin1", silverMineral1X);
+                      telemetry.addData("SilvMin2", silverMineral2X);
+                      telemetry.update();
+                    }
+                    }
+      }
+    
+    private void checkTelemetry() {
+        telemetry.addData("oldMin", goldMineralX);
+        telemetry.addData("SilvMin1", silverMineral1X);
+        telemetry.addData("SilvMin2", silverMineral2X);
+        telemetry.update();
+        if (silverMineral1X == 2) {
+          goldMineralX = 1;
+        }
+    }
+    
+    private void initVuforia() {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraDirection = CameraDirection.BACK;
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        // Loading trackables is not necessary for the Tensor Flow Object Detection engine.
+    }
+
+    /**
+     * Initialize the Tensor Flow Object Detection engine.
+     */
+    private void initTfod() {
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+            "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_GOLD_MINERAL, LABEL_SILVER_MINERAL);
+    }
+}
