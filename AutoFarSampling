@@ -114,25 +114,34 @@ public class AutoFarSampling extends LinearOpMode {
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
 
 // CODE HERE
-            lift(.2, .5);
+            
             delatch();
             delatch();
-            sleep(1000);
-            lift(-.25, 2.2);
-            checkCenter();
-            move(-100, -.6);
-            lift(.3, 2.4);
             sleep(500);
-            gyroPivotLeft(-15, 4); 
+            lift(-.25, 1.9);
+            checkCenter();
+            sleep(500);
+            move(-125, -.6, 5);
+            lift(.4, 2);
+            sleep(500);
+            
+            gyroTurn(-30, 3); 
+            sleep(1000);
             checkRight();
-            move(100,.6);
+            move(75,.6, 5);
+            if (goldMineralX==-1){
+                goldMineralX = 2;
+            }
+            
             switch (goldMineralX) {
                 case 1:  telemetry.addData("Gold is Left", goldMineralX);
+                    runLeft();
                      break;
                 case 2:  telemetry.addData("Gold is Center", goldMineralX);
                     runCenter();
                     break;
                 case 3:  telemetry.addData("Gold is Right", goldMineralX);
+                    runRight();
                      break;
             }
             
@@ -142,15 +151,48 @@ public class AutoFarSampling extends LinearOpMode {
         
     }
     void runCenter(){
-        gyroPivotLeft(90, 6);
-        move(1250, .9);
+        gyroPivotLeft(90, 7);
+        move(1050, .9, 5);
         sleep(100);
-        marker(.7);
-        sleep(500);
+        marker(1);
+        sleep(200);
         marker(.25);
-        sleep(500);
-        gyroTurn(-135, 4);
-        move(-2000, .9);
+        sleep(200);
+        
+        gyroTurn(-160, 5);
+        move(-600,1, 5);
+        gyroTurn(150, 3);
+        move(-1750, .9, 7);
+        
+    }
+    void runLeft(){
+        gyroTurn(50, 3);
+        move(900, .9, 5);
+        gyroTurn(-125, 5);
+        move(700, 1, 5);
+        marker(1);
+        sleep(250);
+        marker(.25);
+        sleep(250);
+        gyroTurn(-145, 2);
+        move(-1750, 1, 7);
+    }
+    
+    void runRight(){
+        gyroTurn(130,4);
+        move(800, 4, 5);
+        gyroTurn(45,2);
+        move(750, 4, 5);
+        marker(1);
+        sleep(200);
+        marker(.25);
+        sleep(200);
+        gyroTurn(160,2);
+        move(-600,1, 7);
+        gyroTurn(140, 3);
+        move(-1950, .9, 7);
+        
+
     }
     
     void delatch() {
@@ -213,7 +255,7 @@ public class AutoFarSampling extends LinearOpMode {
                     motorTurnPower = ((angleDiff)*(.0022222)+.13000);
                     
                 } else {
-                    motorTurnPower = .3;
+                    motorTurnPower = .25;
                 }
             
             } 
@@ -298,7 +340,7 @@ public class AutoFarSampling extends LinearOpMode {
         
             angleDiff = Math.abs(pivotAngleLeft+angles.firstAngle);
             if(angleDiff < 60) {
-                motorTurnPower = ((angleDiff)*(.0022222)+.1600);
+                motorTurnPower = ((angleDiff)*(.0022222)+.1300);
                 
             } else {
                 motorTurnPower = .7;
@@ -364,7 +406,7 @@ public class AutoFarSampling extends LinearOpMode {
         return intTicks;
     }
     
-    private void move(double howFar, double power){
+    private void move(double howFar, double power, double expectedMoveTime){
         
         
             motor0.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -391,7 +433,7 @@ public class AutoFarSampling extends LinearOpMode {
             motor2.setPower(-power);
             //motor3.setPower(-power);
             
-            while(Math.abs(motor0.getCurrentPosition()) < Math.abs(motor0.getTargetPosition()) || Math.abs(motor2.getCurrentPosition()) < Math.abs(motor2.getTargetPosition()) )  { 
+            while((Math.abs(motor0.getCurrentPosition()) < Math.abs(motor0.getTargetPosition()) || Math.abs(motor2.getCurrentPosition()) < Math.abs(motor2.getTargetPosition()) ) && expectedMoveTime > runtime.seconds())  { 
                 
                 int position0 = motor0.getCurrentPosition();
                 int position1 = motor1.getCurrentPosition();
@@ -477,6 +519,9 @@ public class AutoFarSampling extends LinearOpMode {
                       telemetry.addData("SilvMin1", silverMineral1X);
                       telemetry.addData("SilvMin2", silverMineral2X);
                       telemetry.update();
+                      if (silverMineral1X == 2) {
+                         goldMineralX = 1;
+                      }
                     }
                     }
       }
